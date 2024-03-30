@@ -34,5 +34,5 @@ func main() {
 		fmt.Printf("purchase failed (%v)\n", err)
 		return
 	}
-	fmt.Printf("booked: %s (PDF: %s)\n", b.Event, b.PDF)
+	fmt.Printf("booked: %s (PDF: %s)\n", c.Event, b.PDF)
 }

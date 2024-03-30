@@ -1,0 +1,4 @@
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/sneakypanda17/fixr v0.0.0-20190608205907-cad336c7564c h1:ud79Rm7k3adcDVCJwGN5/36TUNPnclGtnmjr9Ln5770=
+github.com/sneakypanda17/fixr v0.0.0-20190608205907-cad336c7564c/go.mod h1:j555w6XKzQKNKX2esPiN3mmIbuBCT8G3TtnkzhTucrw=
