@@ -5,15 +5,16 @@ import json
 import sys
 
 # Add the path of your script to sys.path
-module_path = '..web_scraper/main.py'
+module_path = '..web_scraper'
 if module_path not in sys.path:
     sys.path.append(module_path)
+print(module_path)
 
 # Import the script as a module
-import main
+import get_events
 
 # Call the function from the script
-main.main()
+get_events.main()
 
 
 class TicketApp(tk.Tk):
