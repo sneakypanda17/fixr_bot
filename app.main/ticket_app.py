@@ -5,7 +5,7 @@ import json
 import sys
 
 # Add the path of your script to sys.path
-module_path = '..web_scraper'
+module_path = '../web_scraper/get_events.py'
 if module_path not in sys.path:
     sys.path.append(module_path)
 print(module_path)
