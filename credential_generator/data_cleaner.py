@@ -13,7 +13,7 @@ else:
     with open(input_file, mode='r', newline='') as infile, open(output_file, mode='w', newline='') as outfile:
         # Create a CSV reader and writer
         reader = csv.DictReader(infile)
-        writer = csv.DictWriter(outfile, fieldnames=[field for field in reader.fieldnames if field != 'perct2013'])
+        writer = csv.DictWriter(outfile, fieldnames=[field for field in reader.fieldnames if field != "perct2013"])
         
         # Write the header (field names) to the output file
         writer.writeheader()

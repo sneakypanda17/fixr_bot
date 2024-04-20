@@ -1,18 +1,30 @@
+import pandas as pd
 import random
-validchars='abcdefghijklmnopqrstuvwxyz1234567890'
-loginlen=random.randint(4,15)
-login=''
-for i in range(loginlen):
-    pos=random.randint(0,len(validchars)-1)
-    login=login+validchars[pos]
-if login[0].isnumeric():
-    pos=random.randint(0,len(validchars)-10)
-    login=validchars[pos]+login
 
-servers=['@gmail','@yahoo','@redmail','@hotmail','@bing']
-servpos=random.randint(0,len(servers)-1)
-email=login+servers[servpos]
-tlds=['.com','.in','.gov','.ac.in','.net','.org']
-tldpos=random.randint(0,len(tlds)-1)
-email=email+tlds[tldpos]
-print(email)
+# Load the CSV files
+firstnames_df = pd.read_csv('raw_data/firstnames.csv')  # Update the path as necessary
+surnames_df = pd.read_csv('raw_data/surnames.csv')      # Update the path as necessary
+print(firstnames_df.head)
+
+'''
+# Extract columns as lists
+firstnames = firstnames_df['firstname'].tolist()
+surnames = surnames_df['surname'].tolist()
+
+def generate_email(firstnames, surnames, domain='yahoo.com'):
+    """Generates an email using a random first name, surname, and a random 4-digit number."""
+    firstname = random.choice(firstnames)
+    surname = random.choice(surnames)
+    number = random.randint(1000, 9999)  # Generates a random four digit number
+    email = f"{firstname.lower()}.{surname.lower()}{number}@{domain}"
+    return email
+
+# Generate 10 random emails
+emails = [generate_email(firstnames, surnames) for _ in range(10)]
+
+# Save to CSV
+emails_df = pd.DataFrame(emails, columns=['Email'])
+emails_df.to_csv('generated_emails.csv', index=False)
+print("Emails have been saved to 'generated_emails.csv'")
+
+'''
