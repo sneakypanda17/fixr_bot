@@ -19,7 +19,7 @@ def email_generator():
         return firstname, surname, email
 
     # Generate 10 random emails with associated names
-    data = [generate_email(firstnames, surnames) for _ in range(10)]
+    data = [generate_email(firstnames, surnames) for _ in range(100)]
     data_df = pd.DataFrame(data, columns=['Firstname', 'Surname', 'Email'])
 
     # Save to CSV

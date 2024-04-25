@@ -8,6 +8,6 @@ file_path = os.path.join(os.path.dirname(__file__), "events.json")
 with open(file_path, 'w') as file:
     file.truncate
 
-def get_events():
+def main():
     scraper.url_scraper()
     id_generator.id_generator()
