@@ -11,3 +11,5 @@ with open(file_path, 'w') as file:
 def main():
     scraper.url_scraper()
     id_generator.id_generator()
+
+main()
