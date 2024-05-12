@@ -25,3 +25,4 @@ def email_generator():
     # Save to CSV
     data_df.to_csv('generated_emails.csv', index=False)
     print("Data has been saved to 'generated_emails.csv'")
+email_generator()
