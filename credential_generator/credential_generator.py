@@ -46,9 +46,9 @@ def credential_generator(number_of_emails=10):
         data_df = pd.DataFrame(data, columns=['Firstname', 'Surname', 'Email', 'Password'])
 
         # Save to CSV in the same directory as the script
-        output_path = os.path.join(base_dir, 'generated_credentials.csv')
+        output_path = os.path.join(base_dir, 'credentials.csv')
         data_df.to_csv(output_path, index=False)
-        print("Data has been saved to 'generated_credentials.csv'")
+        print("Data has been saved to 'credentials.csv'")
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")

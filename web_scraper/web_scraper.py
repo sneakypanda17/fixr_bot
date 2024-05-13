@@ -51,7 +51,8 @@ def url_scraper():
             event_id = url.rsplit('-', 1)[-1]
             if event_id not in event_ids:
                 event_ids.append(event_id)
-                event['ID'] = event_id  # Add the event ID as a new key in the dictionary
+                event['ID'] = int(event_id)  # Add the event ID as a new key in the dictionary
+
 
         # Specify the file path to save it in the same directory as the script
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events.json')
