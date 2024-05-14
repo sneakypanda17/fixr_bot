@@ -1,51 +1,65 @@
+import csv
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
-# Replace the fields with the information to create a new account
-first_name = "John"
-last_name = "Doe"
-email = "john.doe@example.com"
-phone_number = "7400123456"
-password = "secure_password123"
-date_of_birth = "01/01/1990"  # Format: dd/mm/yyyy
+def setup_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--ignore-certificate-errors")
 
-# Initialize the Chrome WebDriver
-driver = webdriver.Chrome("C:/Users/danie/Downloads/chromedriver_win32/chromedriver.exe")
+    chromedriver_path = r"C:\Users\danie\Downloads\chromedriver-win64\chromedriver-win64\chromedriver.exe"
+    service = Service(chromedriver_path)
+    return webdriver.Chrome(service=service, options=chrome_options)
 
-try:
-    # Open the registration page
-    driver.get("https://fixr.co/login")
-    # Wait for the 'Sign Up' link and click it
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.LINK_TEXT, "Sign up"))
-    ).click()
+def register_account(driver, account):
+    try:
+        driver.get("https://fixr.co/login")
 
-    # Wait and fill out the registration form
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.NAME, "first_name"))
-    ).send_keys(first_name)
-    driver.find_element(By.NAME, "last_name").send_keys(last_name)
-    driver.find_element(By.NAME, "dob").send_keys(date_of_birth)
-    driver.find_element(By.NAME, "email").send_keys(email)
-    driver.find_element(By.NAME, "email_confirmation").send_keys(email)
-    driver.find_element(By.NAME, "phone_number").send_keys(phone_number)
-    driver.find_element(By.NAME, "password").send_keys(password)
-    driver.find_element(By.NAME, "password_confirmation").send_keys(password)
+        # Click on 'Create an account'
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "b[data-testid='register-button']"))
+        ).click()
 
-    # Select gender, preferred language, and opt-out of communications
-    driver.find_element(By.XPATH, "//label[text()='Prefer not to disclose']").click()
-    driver.find_element(By.XPATH, "//option[text()='English']").click()
-    driver.find_element(By.XPATH, "//label[contains(text(),'opt out')]").click()
+        # Fill out the registration form
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "user-profile-first-name"))
+        ).send_keys(account['Firstname'])
 
-    # Submit the form
-    driver.find_element(By.XPATH, "//button[contains(text(),'Register')]").click()
+        driver.find_element(By.ID, "user-profile-last-name").send_keys(account['Surname'])
+        driver.find_element(By.ID, "user-profile-dob").send_keys(account['Birthday'])
+        driver.find_element(By.ID, "user-profile-email").send_keys(account['Email'])
+        driver.find_element(By.NAME, "confirmEmail").send_keys(account['Email'])
+        driver.find_element(By.ID, "user-profile-phone-number").send_keys(account['Phone Number'])
+        driver.find_element(By.ID, "user-profile-password").send_keys(account['Password'])
+        driver.find_element(By.NAME, "confirmPassword").send_keys(account['Password'])
 
-    # Optionally, handle post-registration tasks or checks here
-    print("Registration attempted with email:", email)
+        # Click on 'Prefer not to disclose' for gender
+        driver.find_element(By.ID, "user-profile-gender-o").click()
 
-finally:
-    # Close the driver after a delay or based on a specific condition
-    driver.quit()
+        # Opt out of marketing
+        driver.find_element(By.ID, "user-profile-marketing-false").click()
+
+        # Submit the form
+        driver.find_element(By.XPATH, "//button[contains(text(),'Register')]").click()
+
+        print(f"Account creation attempted for {account['Email']}")
+
+    except Exception as e:
+        print(f"An error occurred for {account['Email']}: {str(e)}")
+        driver.save_screenshot(f"error_{account['Email']}.png")  # Saves a screenshot for debugging
+
+if __name__ == "__main__":
+    driver = setup_driver()
+    try:
+        with open('../credential_generator/credentials.csv', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for account in reader:
+                register_account(driver, account)
+    finally:
+        driver.quit()
