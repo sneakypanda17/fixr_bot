@@ -54,12 +54,12 @@ def register_account(driver, account):
         )
         register_button.click()
 
-        # Wait for a confirmation element to ensure the page has loaded
+        # Wait for the confirmation element that shows booking was successful
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.XPATH, "//div[contains(text(),'Thank you for registering')]"))
+            EC.visibility_of_element_located((By.XPATH, "//span[contains(text(),'Book tickets.')]"))
         )
 
-        print(f"Account creation attempted for {account['Email']}")
+        print(f"Account creation successful for {account['Email']}")
 
     except Exception as e:
         print(f"An error occurred for {account['Email']}: {str(e)}")
