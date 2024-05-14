@@ -9,9 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sneakypanda17/fixr" // Update this import path
 )
 
@@ -19,7 +17,7 @@ type Event struct {
 	ID      int
 	Name    string
 	Date    string
-	Tickets []Ticket
+	Tickets []fixr.Ticket
 }
 
 type Ticket struct {
@@ -42,27 +40,28 @@ func main() {
 	}
 
 	// Prompt user for event and ticket selection
-	eventID, numTickets, ticketType, err := promptForEventAndTicket(events)
+	eventID, ticketType, err := promptForEventAndTicket(events)
 	if err != nil {
 		fmt.Println("Error selecting event or ticket:", err)
 		return
 	}
 
+	// Prompt user for ticket quantity
+	numTickets, err := promptForTicketQuantity()
+	if err != nil {
+		fmt.Println("Error selecting ticket quantity:", err)
+		return
+	}
+
 	// Load credentials
-	creds, err := loadCredentials("credentials.csv")
+	creds, err := loadCredentials("../credential_generator/credentials.csv")
 	if err != nil {
 		fmt.Println("Error loading credentials:", err)
 		return
 	}
 
-	// Channel to collect successful bookings
-	successChan := make(chan [7]string)
-
 	// Attempt to book tickets
-	go bookTickets(creds, eventID, numTickets, ticketType, successChan)
-
-	// Collect successful bookings and write to a new CSV
-	writeSuccessesToFile(successChan)
+	bookTickets(creds, eventID, numTickets, ticketType)
 }
 
 func loadEvents(filepath string) ([]Event, error) {
@@ -102,7 +101,7 @@ func loadCredentials(filepath string) ([][6]string, error) {
 	return records, nil
 }
 
-func promptForEventAndTicket(events []Event) (int, int, string, error) {
+func promptForEventAndTicket(events []Event) (int, string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("Available Events:")
@@ -112,128 +111,86 @@ func promptForEventAndTicket(events []Event) (int, int, string, error) {
 	fmt.Print("Enter the number of the event you want to book: ")
 	eventIndexStr, err := reader.ReadString('\n')
 	if err != nil {
-		return 0, 0, "", err
+		return 0, "", err
 	}
 	eventIndex, err := strconv.Atoi(strings.TrimSpace(eventIndexStr))
 	if err != nil {
-		return 0, 0, "", err
+		return 0, "", err
 	}
 	if eventIndex < 1 || eventIndex > len(events) {
-		return 0, 0, "", fmt.Errorf("invalid event selection")
+		return 0, "", fmt.Errorf("invalid event selection")
 	}
 	selectedEvent := events[eventIndex-1]
 
-	// Fetch detailed ticket information for the selected event
-	client := fixr.NewClient("your@email.com")           // Use a generic client login for demonstration
-	if err := client.Logon("yourPassword"); err != nil { // Logon to access detailed event info
-		return 0, 0, "", errors.Wrap(err, "login failed, unable to fetch ticket details")
-	}
-
-	eventDetails, err := client.Event(selectedEvent.ID)
-	if err != nil {
-		return 0, 0, "", errors.Wrap(err, fmt.Sprintf("failed to fetch details for event ID %d", selectedEvent.ID))
-	}
-
 	fmt.Println("Available Tickets:")
-	for i, t := range eventDetails.Tickets {
+	for i, t := range selectedEvent.Tickets {
 		fmt.Printf("[%d] %s - £%.2f (Max: %d)\n", i+1, t.Name, t.Price+t.BookingFee, t.Max)
 	}
 	fmt.Print("Select the number of the ticket you want to purchase: ")
 	ticketIndexStr, err := reader.ReadString('\n')
 	if err != nil {
-		return 0, 0, "", err
+		return 0, "", err
 	}
 	ticketIndex, err := strconv.Atoi(strings.TrimSpace(ticketIndexStr))
 	if err != nil {
-		return 0, 0, "", err
+		return 0, "", err
 	}
-	if ticketIndex < 1 || ticketIndex > len(eventDetails.Tickets) {
-		return 0, 0, "", fmt.Errorf("invalid ticket selection")
+	if ticketIndex < 1 || ticketIndex > len(selectedEvent.Tickets) {
+		return 0, "", fmt.Errorf("invalid ticket selection")
 	}
-	selectedTicket := eventDetails.Tickets[ticketIndex-1]
+	selectedTicket := selectedEvent.Tickets[ticketIndex-1]
 
+	return selectedEvent.ID, selectedTicket.Name, nil
+}
+
+func promptForTicketQuantity() (int, error) {
+	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter the number of tickets to book: ")
 	ticketsStr, err := reader.ReadString('\n')
 	if err != nil {
-		return 0, 0, "", err
+		return 0, err
 	}
 	numTickets, err := strconv.Atoi(strings.TrimSpace(ticketsStr))
 	if err != nil {
-		return 0, 0, "", err
+		return 0, err
 	}
-
-	return selectedEvent.ID, numTickets, selectedTicket.Name, nil
+	return numTickets, nil
 }
 
-func bookTickets(creds [][6]string, eventID, numTickets int, ticketType string, successChan chan [7]string) {
-	for _, cred := range creds {
-		go func(cred [6]string) {
-			client := fixr.NewClient(cred[2])             // cred[2] is the email
-			if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
-				fmt.Printf("Logon failed for %s: %v\n", cred[2], err)
-				return
+func bookTickets(creds [][6]string, eventID, numTickets int, ticketType string) {
+	for i, cred := range creds {
+		if i >= numTickets {
+			break // Only book as many tickets as requested
+		}
+		client := fixr.NewClient(cred[2])             // cred[2] is the email
+		if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
+			fmt.Printf("Logon failed for %s: %v\n", cred[2], err)
+			continue
+		}
+
+		event, err := client.Event(eventID)
+		if err != nil {
+			fmt.Printf("Failed to fetch event %d: %v\n", eventID, err)
+			continue
+		}
+
+		var ticket *fixr.Ticket
+		for _, t := range event.Tickets {
+			if t.Name == ticketType && !t.SoldOut && !t.Expired && !t.Invalid {
+				ticket = &t
+				break
 			}
+		}
+		if ticket == nil {
+			fmt.Printf("Ticket type %s not found or unavailable for event %d\n", ticketType, eventID)
+			continue
+		}
 
-			event, err := client.Event(eventID)
-			if err != nil {
-				fmt.Printf("Failed to fetch event %d: %v\n", eventID, err)
-				return
-			}
-
-			var ticket *fixr.Ticket
-			for _, t := range event.Tickets {
-				if t.Name == ticketType {
-					ticket = &t
-					break
-				}
-			}
-			if ticket == nil {
-				fmt.Printf("Ticket type %s not found for event %d\n", ticketType, eventID)
-				return
-			}
-
-			// Retry mechanism until the first successful booking
-			for {
-				booking, err := client.Book(ticket, 1, nil)
-				if err == nil {
-					fmt.Printf("Successfully booked 1 ticket for %s\n", cred[2])
-					successChan <- [7]string{cred[0], cred[1], cred[2], cred[4], cred[5], ticketType, booking.PDF}
-					break
-				}
-				fmt.Printf("Retrying booking for %s: %v\n", cred[2], err)
-				time.Sleep(5 * time.Second) // Adjust retry interval as needed
-			}
-
-			// Attempt to book the remaining tickets
-			remainingTickets := numTickets - 1
-			if remainingTickets > 0 {
-				booking, err := client.Book(ticket, remainingTickets, nil)
-				if err == nil {
-					fmt.Printf("Successfully booked %d tickets for %s\n", remainingTickets, cred[2])
-					successChan <- [7]string{cred[0], cred[1], cred[2], cred[4], cred[5], ticketType, booking.PDF}
-				} else {
-					fmt.Printf("Failed to book remaining %d tickets for %s: %v\n", remainingTickets, cred[2], err)
-				}
-			}
-		}(cred)
-	}
-}
-
-func writeSuccessesToFile(successChan chan [7]string) {
-	file, err := os.Create("successful_purchases.csv")
-	if err != nil {
-		fmt.Println("Error creating successful_purchases.csv:", err)
-		return
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write header
-	writer.Write([]string{"First Name", "Last Name", "Email", "Birthday", "Phone Number", "Ticket Type", "PDF URL"})
-
-	for success := range successChan {
-		writer.Write(success[:])
+		_, err = client.Book(ticket, 1, nil)
+		if err != nil {
+			fmt.Printf("Failed to book ticket for %s: %v\n", cred[2], err)
+		} else {
+			fmt.Printf("Successfully booked ticket for %s\n", cred[2])
+		}
 	}
 }
