@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sneakypanda17/fixr" // Update this import path
 )
 
@@ -122,18 +123,19 @@ func promptForEventAndTicket(events []Event) (int, int, string, error) {
 	}
 	selectedEvent := events[eventIndex-1]
 
-	fmt.Print("Enter the number of tickets to book: ")
-	ticketsStr, err := reader.ReadString('\n')
-	if err != nil {
-		return 0, 0, "", err
+	// Fetch detailed ticket information for the selected event
+	client := fixr.NewClient("your@email.com")           // Use a generic client login for demonstration
+	if err := client.Logon("yourPassword"); err != nil { // Logon to access detailed event info
+		return 0, 0, "", errors.Wrap(err, "login failed, unable to fetch ticket details")
 	}
-	numTickets, err := strconv.Atoi(strings.TrimSpace(ticketsStr))
+
+	eventDetails, err := client.Event(selectedEvent.ID)
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, "", errors.Wrap(err, fmt.Sprintf("failed to fetch details for event ID %d", selectedEvent.ID))
 	}
 
 	fmt.Println("Available Tickets:")
-	for i, t := range selectedEvent.Tickets {
+	for i, t := range eventDetails.Tickets {
 		fmt.Printf("[%d] %s - £%.2f (Max: %d)\n", i+1, t.Name, t.Price+t.BookingFee, t.Max)
 	}
 	fmt.Print("Select the number of the ticket you want to purchase: ")
@@ -145,10 +147,20 @@ func promptForEventAndTicket(events []Event) (int, int, string, error) {
 	if err != nil {
 		return 0, 0, "", err
 	}
-	if ticketIndex < 1 || ticketIndex > len(selectedEvent.Tickets) {
+	if ticketIndex < 1 || ticketIndex > len(eventDetails.Tickets) {
 		return 0, 0, "", fmt.Errorf("invalid ticket selection")
 	}
-	selectedTicket := selectedEvent.Tickets[ticketIndex-1]
+	selectedTicket := eventDetails.Tickets[ticketIndex-1]
+
+	fmt.Print("Enter the number of tickets to book: ")
+	ticketsStr, err := reader.ReadString('\n')
+	if err != nil {
+		return 0, 0, "", err
+	}
+	numTickets, err := strconv.Atoi(strings.TrimSpace(ticketsStr))
+	if err != nil {
+		return 0, 0, "", err
+	}
 
 	return selectedEvent.ID, numTickets, selectedTicket.Name, nil
 }
