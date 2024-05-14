@@ -45,8 +45,19 @@ def register_account(driver, account):
         # Opt out of marketing
         driver.find_element(By.ID, "user-profile-marketing-false").click()
 
-        # Submit the form
-        driver.find_element(By.XPATH, "//button[contains(text(),'Register')]").click()
+        # Scroll down to the bottom of the page
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        # Submit the form by clicking the REGISTER button
+        register_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'REGISTER')]"))
+        )
+        register_button.click()
+
+        # Wait for a confirmation element to ensure the page has loaded
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//div[contains(text(),'Thank you for registering')]"))
+        )
 
         print(f"Account creation attempted for {account['Email']}")
 
