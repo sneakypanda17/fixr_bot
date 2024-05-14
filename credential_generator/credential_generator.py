@@ -80,4 +80,4 @@ def credential_generator(number_of_emails=10):
 
 # Direct usage
 if __name__ == "__main__":
-    credential_generator()
+    credential_generator(3)
