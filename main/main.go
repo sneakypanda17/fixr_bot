@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sneakypanda17/fixr" // Update this import path
+	"github.com/ewancook/fixr"
 )
 
 type Event struct {
@@ -60,8 +60,8 @@ func main() {
 		return
 	}
 
-	// Log in with the first account to fetch ticket ID
-	ticketID, err := fetchTicketID(creds[0], eventID, ticketType)
+	// Log in with the first account to fetch ticket ID and display event details
+	ticketID, err := fetchAndDisplayEventDetails(creds[0], eventID, ticketType)
 	if err != nil {
 		fmt.Println("Error fetching ticket ID:", err)
 		return
@@ -164,23 +164,34 @@ func promptForTicketQuantity() (int, error) {
 	return numTickets, nil
 }
 
-func fetchTicketID(cred [6]string, eventID int, ticketType string) (int, error) {
+func fetchAndDisplayEventDetails(cred [6]string, eventID int, ticketType string) (int, error) {
+	// Create client and logon
 	client := fixr.NewClient(cred[2])             // cred[2] is the email
 	if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
 		return 0, fmt.Errorf("logon failed for %s: %v", cred[2], err)
 	}
 
+	// Fetch event information
 	event, err := client.Event(eventID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to fetch event %d: %v", eventID, err)
 	}
 
+	// Display event details and find ticket ID
+	var ticketID int
+	fmt.Println("Event Details:")
 	for _, t := range event.Tickets {
+		fmt.Printf("[%d] %s (£%.2f; Max: %d)\n", t.ID, t.Name, t.Price+t.BookingFee, t.Max)
 		if t.Name == ticketType && !t.SoldOut && !t.Expired && !t.Invalid {
-			return t.ID, nil
+			ticketID = t.ID
 		}
 	}
-	return 0, fmt.Errorf("ticket type %s not found or unavailable for event %d", ticketType, eventID)
+
+	if ticketID == 0 {
+		return 0, fmt.Errorf("ticket type %s not found or unavailable for event %d", ticketType, eventID)
+	}
+
+	return ticketID, nil
 }
 
 func bookTickets(creds [][6]string, eventID, numTickets, ticketID int) {
@@ -194,9 +205,22 @@ func bookTickets(creds [][6]string, eventID, numTickets, ticketID int) {
 			continue
 		}
 
-		ticket, err := client.GetTicket(ticketID)
+		event, err := client.Event(eventID)
 		if err != nil {
-			fmt.Printf("Failed to fetch ticket %d: %v\n", ticketID, err)
+			fmt.Printf("Failed to fetch event %d: %v\n", eventID, err)
+			continue
+		}
+
+		var ticket *fixr.Ticket
+		for _, t := range event.Tickets {
+			if t.ID == ticketID {
+				ticket = &t
+				break
+			}
+		}
+
+		if ticket == nil {
+			fmt.Printf("Ticket ID %d not found for event %d\n", ticketID, eventID)
 			continue
 		}
 
