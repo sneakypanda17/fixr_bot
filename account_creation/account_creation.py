@@ -17,7 +17,7 @@ def setup_driver():
     service = Service(chromedriver_path)
     return webdriver.Chrome(service=service, options=chrome_options)
 
-def register_account(driver, account):
+def register_account(driver, account, writer):
     try:
         driver.get("https://fixr.co/login")
 
@@ -60,6 +60,9 @@ def register_account(driver, account):
         )
 
         print(f"Account creation successful for {account['Email']}")
+        
+        # Write the successful account to the CSV file
+        writer.writerow(account)
 
     except Exception as e:
         print(f"An error occurred for {account['Email']}: {str(e)}")
@@ -68,9 +71,16 @@ def register_account(driver, account):
 if __name__ == "__main__":
     driver = setup_driver()
     try:
-        with open('../credential_generator/credentials.csv', newline='', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
+        with open('../credential_generator/credentials.csv', newline='', encoding='utf-8') as infile, \
+             open('unused_accounts.csv', 'a', newline='', encoding='utf-8') as outfile:
+            reader = csv.DictReader(infile)
+            writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
+
+            # Write the header only if the file is empty
+            if outfile.tell() == 0:
+                writer.writeheader()
+
             for account in reader:
-                register_account(driver, account)
+                register_account(driver, account, writer)
     finally:
         driver.quit()
