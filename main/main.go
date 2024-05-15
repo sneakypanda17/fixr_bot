@@ -97,10 +97,16 @@ func loadCredentials(filepath string) ([][6]string, error) {
 		return nil, err
 	}
 
+	// Skip the header row
+	if len(rawRecords) <= 1 {
+		return nil, fmt.Errorf("no data found in the CSV file")
+	}
+	rawRecords = rawRecords[1:]
+
 	var records [][6]string
 	for i, record := range rawRecords {
 		if len(record) != 6 {
-			return nil, fmt.Errorf("record on line %d does not have exactly 6 elements, got %d", i+1, len(record))
+			return nil, fmt.Errorf("record on line %d does not have exactly 6 elements, got %d", i+2, len(record))
 		}
 		records = append(records, [6]string{record[0], record[1], record[2], record[3], record[4], record[5]})
 	}
@@ -129,8 +135,13 @@ func promptForEventAndTicket(events []Event) (int, string, error) {
 	}
 	selectedEvent := events[eventIndex-1]
 
+	c := fixr.NewClient("username") // This is a dummy client to load the fixr package
+	c.Logon("password")             // This is a dummy client to load the fixr package
+
+	e, err := c.Event(selectedEvent.ID)
+
 	fmt.Println("Available Tickets:")
-	for i, t := range selectedEvent.Tickets {
+	for i, t := range e.Tickets {
 		fmt.Printf("[%d] %s - £%.2f (Max: %d)\n", i+1, t.Name, t.Price+t.BookingFee, t.Max)
 	}
 	fmt.Print("Select the number of the ticket you want to purchase: ")
@@ -142,10 +153,10 @@ func promptForEventAndTicket(events []Event) (int, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	if ticketIndex < 1 || ticketIndex > len(selectedEvent.Tickets) {
+	if ticketIndex < 1 || ticketIndex > len(e.Tickets) {
 		return 0, "", fmt.Errorf("invalid ticket selection")
 	}
-	selectedTicket := selectedEvent.Tickets[ticketIndex-1]
+	selectedTicket := e.Tickets[ticketIndex-1]
 
 	return selectedEvent.ID, selectedTicket.Name, nil
 }
