@@ -54,14 +54,21 @@ func main() {
 	}
 
 	// Load credentials
-	creds, err := loadCredentials("../credential_generator/credentials.csv")
+	creds, err := loadCredentials("../account_creation/unused_accounts.csv")
 	if err != nil {
 		fmt.Println("Error loading credentials:", err)
 		return
 	}
 
-	// Attempt to book tickets
-	bookTickets(creds, eventID, numTickets, ticketType)
+	// Log in with the first account to fetch ticket ID
+	ticketID, err := fetchTicketID(creds[0], eventID, ticketType)
+	if err != nil {
+		fmt.Println("Error fetching ticket ID:", err)
+		return
+	}
+
+	// Attempt to book tickets using the fetched ticket ID
+	bookTickets(creds, eventID, numTickets, ticketID)
 }
 
 func loadEvents(filepath string) ([]Event, error) {
@@ -157,7 +164,26 @@ func promptForTicketQuantity() (int, error) {
 	return numTickets, nil
 }
 
-func bookTickets(creds [][6]string, eventID, numTickets int, ticketType string) {
+func fetchTicketID(cred [6]string, eventID int, ticketType string) (int, error) {
+	client := fixr.NewClient(cred[2])             // cred[2] is the email
+	if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
+		return 0, fmt.Errorf("logon failed for %s: %v", cred[2], err)
+	}
+
+	event, err := client.Event(eventID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch event %d: %v", eventID, err)
+	}
+
+	for _, t := range event.Tickets {
+		if t.Name == ticketType && !t.SoldOut && !t.Expired && !t.Invalid {
+			return t.ID, nil
+		}
+	}
+	return 0, fmt.Errorf("ticket type %s not found or unavailable for event %d", ticketType, eventID)
+}
+
+func bookTickets(creds [][6]string, eventID, numTickets, ticketID int) {
 	for i, cred := range creds {
 		if i >= numTickets {
 			break // Only book as many tickets as requested
@@ -168,21 +194,9 @@ func bookTickets(creds [][6]string, eventID, numTickets int, ticketType string) 
 			continue
 		}
 
-		event, err := client.Event(eventID)
+		ticket, err := client.GetTicket(ticketID)
 		if err != nil {
-			fmt.Printf("Failed to fetch event %d: %v\n", eventID, err)
-			continue
-		}
-
-		var ticket *fixr.Ticket
-		for _, t := range event.Tickets {
-			if t.Name == ticketType && !t.SoldOut && !t.Expired && !t.Invalid {
-				ticket = &t
-				break
-			}
-		}
-		if ticket == nil {
-			fmt.Printf("Ticket type %s not found or unavailable for event %d\n", ticketType, eventID)
+			fmt.Printf("Failed to fetch ticket %d: %v\n", ticketID, err)
 			continue
 		}
 

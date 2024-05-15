@@ -1,4 +1,5 @@
 import csv
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -71,8 +72,12 @@ def register_account(driver, account, writer):
 if __name__ == "__main__":
     driver = setup_driver()
     try:
-        with open('../credential_generator/credentials.csv', newline='', encoding='utf-8') as infile, \
-             open('unused_accounts.csv', 'a', newline='', encoding='utf-8') as outfile:
+        # Get the current directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Construct the full path to credentials.csv
+        credentials_csv_path = os.path.join(current_dir, '../credential_generator/credentials.csv')
+        with open(credentials_csv_path, newline='', encoding='utf-8') as infile, \
+             open(os.path.join(current_dir,'unused_accounts.csv'), 'a', newline='', encoding='utf-8') as outfile:
             reader = csv.DictReader(infile)
             writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
 
