@@ -32,42 +32,36 @@ type Ticket struct {
 }
 
 func main() {
-	// Load events from a JSON file
 	events, err := loadEvents("../web_scraper/events.json")
 	if err != nil {
 		fmt.Println("Error loading events:", err)
 		return
 	}
 
-	// Prompt user for event and ticket selection
 	eventID, ticketType, err := promptForEventAndTicket(events)
 	if err != nil {
 		fmt.Println("Error selecting event or ticket:", err)
 		return
 	}
 
-	// Prompt user for ticket quantity
 	numTickets, err := promptForTicketQuantity()
 	if err != nil {
 		fmt.Println("Error selecting ticket quantity:", err)
 		return
 	}
 
-	// Load credentials
 	creds, err := loadCredentials("../account_creation/unused_accounts.csv")
 	if err != nil {
 		fmt.Println("Error loading credentials:", err)
 		return
 	}
 
-	// Log in with the first account to fetch ticket ID and display event details
 	ticketID, err := fetchAndDisplayEventDetails(creds[0], eventID, ticketType)
 	if err != nil {
 		fmt.Println("Error fetching ticket ID:", err)
 		return
 	}
 
-	// Attempt to book tickets using the fetched ticket ID
 	bookTickets(creds, eventID, numTickets, ticketID)
 }
 
@@ -76,11 +70,13 @@ func loadEvents(filepath string) ([]Event, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var events []Event
 	err = json.Unmarshal(data, &events)
 	if err != nil {
 		return nil, err
 	}
+
 	return events, nil
 }
 
@@ -97,7 +93,6 @@ func loadCredentials(filepath string) ([][6]string, error) {
 		return nil, err
 	}
 
-	// Skip the header row
 	if len(rawRecords) <= 1 {
 		return nil, fmt.Errorf("no data found in the CSV file")
 	}
@@ -135,8 +130,8 @@ func promptForEventAndTicket(events []Event) (int, string, error) {
 	}
 	selectedEvent := events[eventIndex-1]
 
-	c := fixr.NewClient("username") // This is a dummy client to load the fixr package
-	c.Logon("password")             // This is a dummy client to load the fixr package
+	c := fixr.NewClient("username")
+	c.Logon("password")
 
 	e, err := c.Event(selectedEvent.ID)
 
@@ -176,19 +171,16 @@ func promptForTicketQuantity() (int, error) {
 }
 
 func fetchAndDisplayEventDetails(cred [6]string, eventID int, ticketType string) (int, error) {
-	// Create client and logon
-	client := fixr.NewClient(cred[2])             // cred[2] is the email
-	if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
+	client := fixr.NewClient(cred[2])
+	if err := client.Logon(cred[3]); err != nil {
 		return 0, fmt.Errorf("logon failed for %s: %v", cred[2], err)
 	}
 
-	// Fetch event information
 	event, err := client.Event(eventID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to fetch event %d: %v", eventID, err)
 	}
 
-	// Display event details and find ticket ID
 	var ticketID int
 	fmt.Println("Event Details:")
 	for _, t := range event.Tickets {
@@ -208,10 +200,10 @@ func fetchAndDisplayEventDetails(cred [6]string, eventID int, ticketType string)
 func bookTickets(creds [][6]string, eventID, numTickets, ticketID int) {
 	for i, cred := range creds {
 		if i >= numTickets {
-			break // Only book as many tickets as requested
+			break
 		}
-		client := fixr.NewClient(cred[2])             // cred[2] is the email
-		if err := client.Logon(cred[3]); err != nil { // cred[3] is the password
+		client := fixr.NewClient(cred[2])
+		if err := client.Logon(cred[3]); err != nil {
 			fmt.Printf("Logon failed for %s: %v\n", cred[2], err)
 			continue
 		}
