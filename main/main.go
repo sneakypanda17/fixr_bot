@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ewancook/fixr"
+	"github.com/sneakypanda17/fixr"
 )
 
 type Event struct {
