@@ -9,7 +9,8 @@ def url_scraper():
 
     # Add headers to mimic a browser visit
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
 
     # Sending a GET request to the website with headers
     response = requests.get(url, headers=headers)
@@ -53,7 +54,6 @@ def url_scraper():
                 event_ids.append(event_id)
                 event['ID'] = int(event_id)  # Add the event ID as a new key in the dictionary
 
-
         # Specify the file path to save it in the same directory as the script
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events.json')
 
@@ -63,4 +63,5 @@ def url_scraper():
     else:
         print("Failed to retrieve data, HTTP Status:", response.status_code)
 
-url_scraper()
+if __name__ == "__main__":
+    url_scraper()

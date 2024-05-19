@@ -1,8 +1,6 @@
 import pandas as pd
 import random
 import os
-import secrets
-import string
 from datetime import datetime, timedelta
 
 def credential_generator(number_of_emails=10):
@@ -48,7 +46,7 @@ def credential_generator(number_of_emails=10):
             """Generates an email using a random first name, surname, and a random 4-digit number."""
             firstname = random.choice(firstnames)
             surname = random.choice(surnames)
-            number = random.randint(1000, 9999)  # Generates a random four digit number
+            number = random.randint(1000, 9999)  # Generates a random four-digit number
             email = f"{firstname.lower()}.{surname.lower()}{number}@{domain}"
             password = generate_password()
             birthday = generate_birthday()
